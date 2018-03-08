@@ -1,0 +1,255 @@
+<!--
+
+	- study abroad advisor cat asks you when you want to study abroad
+	- you select the terms you want and then click done
+	- study abroad advisor cat tells you how many programs it has matching that and asks you where you want to study abraod
+	- you select the regions you want and then click done
+	- study abroad advisor cat tell you how many programs it has matching and asks if you would like to see them or narrow down your search a bit more
+	- if you want to narrow it down more, you select the countries you want and then click done
+	- study abroad advisor cat shows you the results and lets you click each to get more information about it
+	- when you click a program, the program's location and parameters are displayed along with an indicator of whether or not it is currently accepting applications
+	- you can then choose to thank study abroad advisor cat and go to the program brochure page
+
+	TO-DO:
+		- restyling the buttons
+		- commenting the code
+		- doublecheck the use of RECORDCOUNT rather than ROWCOUNT
+
+	ALT-IDEAS:
+		- saving the search in a browser cookie
+		- term exclusion list
+
+-->
+<style>
+	#pagebodycontentheader, #country-options { display: none; }
+	#lolcat-program-search-container { position: relative; }
+	#loading-image { position: absolute; right: 10px; top: 18px; text-align: center; }
+	#image-container { margin-top: 15px; }
+	#image-inner-container { min-height: 100px; border: black; border-style: solid; border-width: 1px; }
+	#information-container {margin: 15px 0px;}
+	#information-container .lead {font-weight: 500;}
+	.search-option { margin-right: 15px; margin-bottom: 15px; padding: 20px; font-size: 1.5em;}
+	.search-option:focus { outline:0; }
+	button#submit-button, #search-confirmation .result-nav {margin-top: 15px; padding: 10px 25px; font-size: 1.5em;}
+	.result-option { font-size: 1.15em; }
+	.prog-param { margin: 5px -5px; border: black; border-style: solid; border-width: 1px; padding: 15px; border-radius: 3px;}
+	.prog-param-name { font-weight: bold; }
+</style>
+<div class="row" id="lolcat-program-search-container">
+	<div id="loading-image"><img alt="nyancat" src="data:image/gif;base64,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" /><br />loading</div>
+	<div class="col-md-6 col-lg-4" id="image-container">
+		<div id="image-inner-container"></div><!--Yo dawg I heard you like containers-->
+	</div>
+	<div class="col-md-6 col-lg-8" id="information-container"></div>
+	<div id="modal-container"></div>
+</div>
+<script>
+	imageIds = ['1003','1005'];
+	$(document).ready(function(){
+		$(document).ajaxSend(function(){ $("#loading-image").show(); }).ajaxComplete(function(){ $("#loading-image").hide(); });
+		init();
+	});
+	function init() {
+		termCriteria = [];
+		regionCriteria = [];
+		countryCriteria = [];
+		curSearchResults = {};
+		$.getJSON('//' + window.location.hostname + '/piapi/index.cfm?callName=getProgramSearchElements&terms=true&ResponseEncoding=json&callBackName=initializePage&jsoncallback=?');
+	}
+	function _cb_initializePage(data) {
+		displayRandomImage();
+		var infoHtml = '<p class="lead">HAI THER!!1 LETZ F1ND U A PROGRM!</p><p>Start by selecting the terms that you would like to study abroad during.<p><div id="term-options">';
+		var optionValues = [];
+		for (option in data.ELEMENT.OPTIONS.OPTION) {
+			if (data.ELEMENT.OPTIONS.OPTION[option].VALUE != "") {
+				optionValues.push(data.ELEMENT.OPTIONS.OPTION[option].NAME);
+			}
+		}
+		infoHtml = infoHtml + generateOptionButtons('trm',optionValues);
+		infoHtml = infoHtml + '</div><div class="text-center"><button id="submit-button" class="btn btn-primary" disabled="disabled" onclick="runSearch(\'processTermSearchResults\');">A11 DUN</button></div>';
+		$('#information-container').html(infoHtml);
+	}
+	function displayRandomImage() {
+		var idIndex = Math.floor((Math.random() * imageIds.length));
+		var newHtml = '<img class="img-responsive" src="_customtags/ct_Image.cfm?Image_ID=' + imageIds[idIndex] + '" alt="study abroad advisor cat" title="study abroad advisor cat" />';
+		$('#image-inner-container').html(newHtml);
+	}
+	function generateOptionButtons(type, values) {
+		var optionHtml = ''
+		for (var i=0; i < values.length; i++) {
+			optionHtml = optionHtml + '<button class="btn btn-default search-option" id="' + type + '-' + safeId(values[i]) + '" value="disabled" onclick="optionClicked(\'' + type + '|' + safeUrlParam(values[i]) + '|' + safeId(values[i]) + '\');">' + values[i] + '</button>';
+		}
+		return optionHtml;
+	}
+	function optionClicked(paramTypeValue) {
+		var typeVal = paramTypeValue.split('|');
+		var optionId = typeVal[0] + '-' + typeVal[2];
+		var curState = $('#' + optionId).val();
+		if (curState == 'disabled') {
+			$('#' + optionId).removeClass('btn-default').addClass('btn-primary').val('enabled');
+		} else {
+			$('#' + optionId).removeClass('btn-primary').addClass('btn-default').val('disabled');
+		}
+		switch(typeVal[0]) {
+			case "trm":
+				if (curState == 'disabled') {
+					termCriteria.push(typeVal[1]);
+					$('#submit-button').removeAttr('disabled');
+				} else {
+					termCriteria.splice(termCriteria.indexOf(typeVal[1]),1);
+					if (termCriteria.length == 0) { $('#submit-button').attr('disabled','disabled'); }
+				}
+				break;
+			case "rgn":
+				if (curState == 'disabled') {
+					regionCriteria.push(typeVal[1]);
+					$('#submit-button').removeAttr('disabled');
+				} else {
+					regionCriteria.splice(regionCriteria.indexOf(typeVal[1]),1);
+					if (regionCriteria.length == 0) { $('#submit-button').attr('disabled','disabled'); }
+				}
+				break;
+			case "cty":
+				if (curState == 'disabled') {
+					countryCriteria.push(typeVal[1]);
+					$('#submit-button').removeAttr('disabled');
+				} else {
+					countryCriteria.splice(countryCriteria.indexOf(typeVal[1]),1);
+					if (countryCriteria.length == 0) { $('#submit-button').attr('disabled','disabled'); }
+				}
+				break;
+			default:
+				console.log('Error - there was an invalid type of criteria passed in');
+		}
+	}
+	function runSearch(cbname) {
+		var apiUrl = '//' + window.location.hostname + '/piapi/index.cfm?callName=getProgramSearchResults&Term=';
+		for (var i=0; i < termCriteria.length; i++) {
+			apiUrl = apiUrl + termCriteria[i] + '%7F%2C';
+		}
+		apiUrl = apiUrl.substring(0, apiUrl.length-6);
+		if (regionCriteria.length > 0) {
+			apiUrl = apiUrl + '&Region=';
+			for (var i=0; i < regionCriteria.length; i++) {
+				apiUrl = apiUrl + regionCriteria[i] + '%7F%2C';
+			}
+			apiUrl = apiUrl.substring(0, apiUrl.length-6);
+		}
+		if (countryCriteria.length > 0) {
+			apiUrl = apiUrl + '&Country=';
+			for (var i=0; i < countryCriteria.length; i++) {
+				apiUrl = apiUrl + countryCriteria[i] + '%7F%2C';
+			}
+			apiUrl = apiUrl.substring(0, apiUrl.length-6);
+		}
+		apiUrl = apiUrl + '&ResponseEncoding=json&callBackName=' + cbname + '&jsoncallback=?';
+		$.getJSON(apiUrl);
+	}
+	function _cb_processTermSearchResults(data) {
+		curSearchResults = data;
+		displayRandomImage();
+		if (data.RECORDCOUNT == 1) {
+			_cb_processTermCountrySearchResults(curSearchResults);
+		} else {
+			var infoHtml = '<p class="lead">GRT!!! WEE FOUN SUM PROGRAMZ!!</p><p>We found ' + data.RECORDCOUNT + ' study abroad programs in those terms. Now pick the regions you would like to study abroad in.<p><div id="region-options">';
+			var optionValues = [];
+			for (program in data.PROGRAM) {
+				if (optionValues.indexOf(data.PROGRAM[program].PROGRAM_REGION) == -1) {
+					optionValues.push(data.PROGRAM[program].PROGRAM_REGION);
+				}
+			}
+			infoHtml = infoHtml + generateOptionButtons('rgn',optionValues);
+			infoHtml = infoHtml + '</div><div class="text-center"><button id="submit-button" class="btn btn-primary" disabled="disabled" onclick="runSearch(\'processTermRegionSearchResults\');">K FNSHED</button></div>';
+			$('#information-container').html(infoHtml);
+		}
+	}
+	function _cb_processTermRegionSearchResults(data) {
+		curSearchResults = data;
+		displayRandomImage();
+		if (data.RECORDCOUNT == 1) {
+			_cb_processTermCountrySearchResults(curSearchResults);
+		} else {
+			var infoHtml = '<div id="search-confirmation"><p class="lead">YAY!!1! SO H3LPFL!!</p><p>That brings it down to ' + data.RECORDCOUNT + ' study abroad programs. Do you want to narrow it down further or are you ready to look at the programs I found?<p>';
+			infoHtml = infoHtml + '<div class="text-center"><button class="btn btn-primary result-nav" onclick="_cb_processTermCountrySearchResults(curSearchResults);">SHO ME N0W!</button>&nbsp;&nbsp;<button class="btn btn-primary result-nav" onclick="showCountries();">TOO MNY PRGMZ</button></div></div>';
+			infoHtml = infoHtml + '<div id="country-options"><p class="lead">LST ST3P - PR0MIS3!!</p>Pick the countries that you are interested in.</p>';
+			var optionValues = [];
+			for (program in data.PROGRAM) {
+				if (optionValues.indexOf(data.PROGRAM[program].PROGRAM_COUNTRY) == -1) {
+					optionValues.push(data.PROGRAM[program].PROGRAM_COUNTRY);
+				}
+			}
+			infoHtml = infoHtml + generateOptionButtons('cty',optionValues);
+			infoHtml = infoHtml + '<div class="text-center"><button id="submit-button" class="btn btn-primary" disabled="disabled" onclick="runSearch(\'processTermCountrySearchResults\');">RUN!!!!1!!</button></div></div>';
+			$('#information-container').html(infoHtml);
+		}
+	}
+	function showCountries() {
+		$('#search-confirmation').css('display','none');
+		$('#country-options').css('display','block');
+	}
+	function _cb_processTermCountrySearchResults(data) {
+		curSearchResults = data;
+		displayRandomImage();
+		if (data.RECORDCOUNT == 1) {
+			var infoHtml = '<div id="search-confirmation"><p class="lead">LUKKY U!!!1</p><p>There is one program that meets your criteria. Click on the program name to see more information about the program.</p><div class="btn-group-vertical btn-block" role="group">';
+			infoHtml = infoHtml + '<button class="btn btn-default result-option" id="prg-' + data.PROGRAM.PROGRAM_ID + '" onclick="fetchProgramInformation(' + data.PROGRAM.PROGRAM_ID + ');">' + data.PROGRAM.PROGRAM_NAME + '</button>';
+		} else {
+			var infoHtml = '<div id="search-confirmation"><p class="lead">UR IN UR S3RCH RESLTZ</p><p>These are the programs that meet your criteria. Click on the program name to see more information about the program.</p><div class="btn-group-vertical btn-block" role="group">';
+			var tempProgramAry = [];
+			for (program in data.PROGRAM) {
+				if (tempProgramAry.indexOf(data.PROGRAM[program].PROGRAM_ID) == -1) {
+					infoHtml = infoHtml + '<button class="btn btn-default result-option" id="prg-' + data.PROGRAM[program].PROGRAM_ID + '" onclick="fetchProgramInformation(' + data.PROGRAM[program].PROGRAM_ID + ');">' + data.PROGRAM[program].PROGRAM_NAME + '</button>';
+					tempProgramAry.push(data.PROGRAM[program].PROGRAM_ID);
+				}
+			}
+		}
+		infoHtml = infoHtml + '</div><p class="text-center"><br /><button class="btn btn-primary result-nav" onclick="init();">STRT 0V3R</button></p></div>';
+		$('#information-container').html(infoHtml);
+	}
+	function fetchProgramInformation(programId) {
+		var programDetailsUrlParam = '//' + window.location.hostname + '/piapi/index.cfm?callName=getProgramBrochure&program_id=' + programId + '&ResponseEncoding=json&callBackName=processProgramInformation&jsoncallback=?';
+		$.getJSON(programDetailsUrlParam);
+	}
+	function _cb_processProgramInformation(data) {
+		var modalHtmlHead = '<div id="modal-content" class="modal fade" tabindex="-1" role="dialog"><div class="modal-dialog" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title">' + data.DETAILS.PROGRAM_NAME + '</h4></div><div class="modal-body">';
+		var modalHtmlBody = '<p><strong>Location';
+		var modalHtmlFooter = '</div><div class="modal-footer"><button type="button" class="btn btn-primary" onclick="location.href = \'//' + window.location.hostname + '/index.cfm?FuseAction=Programs.ViewProgram&Program_ID=' + data.DETAILS.PROGRAM_ID + '\';">View full brochure</button>&nbsp;<button type="button" class="btn btn-default" data-dismiss="modal">Close</button></div></div></div></div>';
+		if (data.DETAILS.LOCATIONS.LOCATION.PROGRAM_CITY) {
+			modalHtmlBody = modalHtmlBody +  ': </strong>' + data.DETAILS.LOCATIONS.LOCATION.PROGRAM_CITY + ', ' + data.DETAILS.LOCATIONS.LOCATION.PROGRAM_COUNTRY + '</p>';
+		} else {
+			modalHtmlBody = modalHtmlBody +  's: </strong>';
+			for (loc in data.DETAILS.LOCATIONS.LOCATION) {
+				modalHtmlBody = modalHtmlBody + data.DETAILS.LOCATIONS.LOCATION[loc].PROGRAM_CITY + ', ' + data.DETAILS.LOCATIONS.LOCATION[loc].PROGRAM_COUNTRY + '; ';
+			}
+			modalHtmlBody = modalHtmlBody.substring(0, modalHtmlBody.length-2);
+		}
+		var paramIds = [];
+		modalHtmlBody = modalHtmlBody + '<div id="program-parameters" class="row">';
+		for (parameter in data.DETAILS.PARAMETERS.PARAMETER) {
+			if (data.DETAILS.PARAMETERS.PARAMETER[parameter].PARAM_VIEWABLE == 1 && paramIds.indexOf(data.DETAILS.PARAMETERS.PARAMETER[parameter].PARAM_ID) == -1) {
+				modalHtmlBody = modalHtmlBody + '<div class="col-md-6 col-lg-4"><div class="prog-param"><span class="prog-param-name">' + data.DETAILS.PARAMETERS.PARAMETER[parameter].PROGRAM_PARAM_TEXT + ': </span><span class="prog-param-values" id="param-id-' + data.DETAILS.PARAMETERS.PARAMETER[parameter].PARAM_ID + '"></span></div></div>';
+				paramIds.push(data.DETAILS.PARAMETERS.PARAMETER[parameter].PARAM_ID);
+			}
+		}
+		modalHtmlBody = modalHtmlBody + '</div>';
+		if (data.DETAILS.APPLY_NOW.ENABLED == 'YES'){
+			modalHtmlBody = modalHtmlBody + '<p class="text-center"><br /><strong>This program is currently accepting applications</strong></p>';
+		} else {
+			modalHtmlBody = modalHtmlBody + '<p class="text-center"><br /><i>This program is not currently accepting applications</i></p>';
+		}
+		$('#modal-container').html(modalHtmlHead + modalHtmlBody + modalHtmlFooter);
+		for (parameter in data.DETAILS.PARAMETERS.PARAMETER) {
+			var curValue = $('#param-id-' + data.DETAILS.PARAMETERS.PARAMETER[parameter].PARAM_ID).html();
+			if (curValue != '') { curValue = curValue + ', '; }
+			curValue = curValue + data.DETAILS.PARAMETERS.PARAMETER[parameter].PARAM_VALUE;
+			$('#param-id-' + data.DETAILS.PARAMETERS.PARAMETER[parameter].PARAM_ID).html(curValue);
+		}
+		$('#modal-content').modal();
+	}
+	function safeId(idString) {
+		return idString.replace(/ /g,"-").replace(/,/g,"-").replace(/\//g,"-").replace(/'/g,"-").replace(/'/g,"-");
+	}
+	function safeUrlParam(paramString) {
+		return paramString.replace(/ /g,"+").replace(/,/g,"%2C").replace(/\//g,"%2F").replace(/'/g,"%27");
+	}
+</script>

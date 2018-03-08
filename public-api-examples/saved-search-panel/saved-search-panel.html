@@ -1,0 +1,75 @@
+<!--
+	- this panel can be put on any page through the WYSIWYG Editor
+	- it will run a program search that can be configured in the script
+	- it will display a slideshow of the results with options to jump to the brochure page
+-->
+<style>
+	.carousel-inner .item {text-align: center;padding: 20px 30px;min-height: 150px;}
+	.panel-program-name {font-size: 1.25em;font-weight: bold;padding-bottom: 10px;}
+	.panel-program-locations {font-size: 0.9em;padding-bottom: 10px;}
+	span.fa.fa-chevron-left.glyphicon.glyphicon-chevron-left {padding-right: 10px;}
+	span.fa.fa-chevron-right.glyphicon.glyphicon-chevron-right {padding-left: 10px;}
+</style>
+<div id="saved-search-panel-container">
+	<div class="col-xs-12 col-sm-6 pull-right">
+		<div class="panel panel-primary">
+			<div class="panel-heading">Fall programs</div>
+			<div id="program-search-body">
+				<br /><p class="text-center">... loading ...</p>
+			</div>
+		</div>
+	</div>
+</div>
+<script>
+	$(document).ready(function(){
+		// set the criteria for the search in a variable
+		// this example searches for Outgoing programs that accept applications in the fall and are not Directory imported programs
+		var searchCriteria = 'ProgramType=1&Term=Fall&Sponsored=0';
+		// run the program search API call
+		$.getJSON('//' + window.location.hostname + '/piapi/index.cfm?callName=getProgramSearchResults&' + searchCriteria + '&ResponseEncoding=json&callBackName=populatePanel&jsoncallback=?');
+	});
+	function _cb_populatePanel(data) {
+		// debugging
+		console.log(data); APIdata = data;
+		if (data.RECORDCOUNT > 0) {
+			// parse the results to build the Bootstrap carousel (https://getbootstrap.com/docs/3.3/javascript/#carousel)
+			var panelOpeningHTML = '<div id="carousel-example-generic" class="carousel slide" data-ride="carousel"><div class="carousel-inner" role="listbox">';
+			var panelClosingHTML = '</div><a class="left carousel-control" href="#carousel-example-generic" role="button" data-slide="prev"><span class="fa fa-chevron-left glyphicon glyphicon-chevron-left" aria-hidden="true"></span><span class="sr-only">Previous</span></a><a class="right carousel-control" href="#carousel-example-generic" role="button" data-slide="next"><span class="fa fa-chevron-right glyphicon glyphicon-chevron-right" aria-hidden="true"></span><span class="sr-only">Next</span></a></div>';
+			var panelInnerHTML = '';
+			// build arrays from the API's search results
+			var programIds = [];
+			var programNames = [];
+			var programLocations = [];
+			for (program in data.PROGRAM) {
+				var i = programIds.length;
+				// check to make sure this isn't a multi-location program
+				if (programIds.indexOf(data.PROGRAM[program].PROGRAM_ID) != -1) {
+					// add the location
+					var curProgramLocations = programLocations[programIds.indexOf(data.PROGRAM[program].PROGRAM_ID)];
+					programLocations[programIds.indexOf(data.PROGRAM[program].PROGRAM_ID)] = programLocations[programIds.indexOf(data.PROGRAM[program].PROGRAM_ID)] + '; ' + data.PROGRAM[program].PROGRAM_CITY + ', ' + data.PROGRAM[program].PROGRAM_COUNTRY
+				} else {
+					// add the id, name, and location
+					programIds[i] = data.PROGRAM[program].PROGRAM_ID;
+					programNames[i] = data.PROGRAM[program].PROGRAM_NAME;
+					programLocations[i] =data.PROGRAM[program].PROGRAM_CITY + ', ' + data.PROGRAM[program].PROGRAM_COUNTRY;
+				}
+			};
+			// build html from the arrays
+			for (var i = 0; i < programIds.length; i++) {
+				if (i == 0) {
+					panelInnerHTML = '<div class="item active">';
+				} else {
+					panelInnerHTML = panelInnerHTML + '<div class="item">';
+				}
+				panelInnerHTML = panelInnerHTML + '<div class="panel-program-name">' + programNames[i] + '</div><div class="panel-program-locations">' + programLocations[i] + '</div><div class="panel-program-brochurebutton"><button class="btn btn-primary btn-xs" onclick="location.href = \'//' + window.location.hostname + '/index.cfm?FuseAction=Programs.ViewProgram&Program_ID=' + programIds[i] + '\';">view brochure</button></div>';
+				panelInnerHTML = panelInnerHTML + '</div>';
+			}
+
+			// push the results into the container
+			$('#program-search-body').html(panelOpeningHTML + panelInnerHTML + panelClosingHTML);
+			$('.carousel').carousel('cycle');
+		} else {
+			$('#program-search-body').html('<p class="text-center">No programs found</p>');
+		}
+	};
+</script>

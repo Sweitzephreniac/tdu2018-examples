@@ -1,0 +1,115 @@
+<!--
+
+	- page loads all the featured program ids for the site
+	- fetches the program brochure content for the first one and displays it
+	- you can step forward to view the next one or back to view the last one
+	- the page displays the brochure page content, parameters, application deadlines, and has an apply now button if it is accepting applications
+
+-->
+<style>
+	#pagebodycontentheader { display: none; }
+	#pagebodycontent { padding-top: 10px; }
+	#previous-program { float: left; margin-right: 20px; }
+	#next-program { float: right; margin-left: 20px; }
+	#main-program-heading { text-align: center }
+	.cta-button { margin: 0px 10px; }
+	#program-parameters { margin-top: 5px; }
+	.prog-param { margin: 5px -5px; border: black; border-style: solid; border-width: 1px; padding: 15px; border-radius: 3px;}
+	.prog-param-name { font-weight: bold; }
+</style>
+<div id="featured-program-browser-container" class="panel panel-primary">
+	<div class="panel-heading">Featured programs</div>
+	<div class="panel-body">
+		<div id="main-program-heading"><br /><p class="text-center">... loading ...</p></div>
+		<div id="program-parameters"></div>
+	</div>
+	<div class="table-responsive" id ="program-dates"></div>
+	<div class="panel-body" id="brochure-content"></div>
+</div>
+<script>
+	featuredProgramIds = [];
+	$(document).ready(function(){
+		// run the API call to get the list of all the featured programs
+		$.getJSON('//' + window.location.hostname + '/piapi/index.cfm?callName=getFeaturedPrograms&ResponseEncoding=json&callBackName=initializePage&jsoncallback=?');
+	});
+	function _cb_initializePage(data) {
+		for (program in data.PROGRAM) {
+			if (featuredProgramIds.indexOf(data.PROGRAM[program].PROGRAM_ID) == -1) {
+				featuredProgramIds.push(data.PROGRAM[program].PROGRAM_ID);
+			}
+		}
+		populatePage(featuredProgramIds[0]);
+	}
+	function populatePage(programId) {
+		// run the API call to get the program's brochure content
+		$.getJSON('//' + window.location.hostname + '/piapi/index.cfm?callName=getProgramBrochure&program_id=' + programId + '&ResponseEncoding=json&callBackName=parseResults&jsoncallback=?');
+	}
+	function _cb_parseResults (data) {
+		// program name and navigation
+		var headingHtml = '<button id="previous-program" class="btn btn-primary" onclick="previousProgram(' + data.DETAILS.PROGRAM_ID + ')">&lt;</button><button id="next-program" class="btn btn-primary" onclick="nextProgram(' + data.DETAILS.PROGRAM_ID + ')">&gt;</button><h2>' + data.DETAILS.PROGRAM_NAME + '</h2>';
+		$('#main-program-heading').html(headingHtml);
+		// calls to action
+		var ctaHtml = '<div id="calls-to-action">';
+		if (data.DETAILS.APPLY_NOW.ENABLED == 'YES') {
+			ctaHtml = ctaHtml + '<button id="apply-now" class="btn btn-primary btn-lg cta-button" onclick="window.location=\'' + data.DETAILS.APPLY_NOW.LINK.HREF + '\';">Apply<br />now</button>';
+		}
+		if (data.DETAILS.INFO_REQUEST.ENABLED == 'YES') {
+			ctaHtml = ctaHtml + '<button id="request-info" class="btn btn-primary btn-lg cta-button" onclick="window.location=\'' + data.DETAILS.INFO_REQUEST.LINK.HREF + '\';">Request<br />information</button>';
+		}
+		$('#main-program-heading').append(ctaHtml);
+		// parameters
+		var paramHtml = '';
+		var paramIds = [];
+		for (parameter in data.DETAILS.PARAMETERS.PARAMETER) {
+			if (data.DETAILS.PARAMETERS.PARAMETER[parameter].PARAM_VIEWABLE == 1 && paramIds.indexOf(data.DETAILS.PARAMETERS.PARAMETER[parameter].PARAM_ID) == -1) {
+				paramHtml = paramHtml + '<div class="col-md-6 col-lg-4"><div class="prog-param"><span class="prog-param-name">' + data.DETAILS.PARAMETERS.PARAMETER[parameter].PROGRAM_PARAM_TEXT + ': </span><span class="prog-param-values" id="param-id-' + data.DETAILS.PARAMETERS.PARAMETER[parameter].PARAM_ID + '"></span></div></div>';
+				paramIds.push(data.DETAILS.PARAMETERS.PARAMETER[parameter].PARAM_ID);
+			}
+		}
+		$('#program-parameters').html(paramHtml);
+		for (parameter in data.DETAILS.PARAMETERS.PARAMETER) {
+			var curValue = $('#param-id-' + data.DETAILS.PARAMETERS.PARAMETER[parameter].PARAM_ID).html();
+			if (curValue != '') { curValue = curValue + ', '; }
+			curValue = curValue + data.DETAILS.PARAMETERS.PARAMETER[parameter].PARAM_VALUE;
+			$('#param-id-' + data.DETAILS.PARAMETERS.PARAMETER[parameter].PARAM_ID).html(curValue);
+		}
+		// dates and deadlines
+		var datesHtmlHeading = '<table class="table table-bordered table-condensed table-striped"><tr><th colspan="4" class="bg-primary">Dates & deadlines</th></tr><tr><th>term / year</th><th class="compact-column text-center">application deadline</th><th class="compact-column text-center">start date</th><th class="compact-column text-center">end date</th></tr>';
+		var datesHtmlBody = ''
+		var datesHtmlFooter = '</table>';
+		var datesData = [];
+		if (data.DETAILS.DATES.DATE.APP_TERM) {
+			datesData.push([data.DETAILS.DATES.DATE.OVERRIDE,data.DETAILS.DATES.DATE.OVERRIDE2,data.DETAILS.DATES.DATE.APP_TERM,data.DETAILS.DATES.DATE.APP_YEAR,data.DETAILS.DATES.DATE.BDUALYEARTERM,data.DETAILS.DATES.DATE.TERM_START,data.DETAILS.DATES.DATE.TERM_END]);
+		} else {
+			for (var key in data.DETAILS.DATES.DATE) {
+				datesData.push([data.DETAILS.DATES.DATE[key].OVERRIDE,data.DETAILS.DATES.DATE[key].OVERRIDE2,data.DETAILS.DATES.DATE[key].APP_TERM,data.DETAILS.DATES.DATE[key].APP_YEAR,data.DETAILS.DATES.DATE[key].BDUALYEARTERM,data.DETAILS.DATES.DATE[key].TERM_START,data.DETAILS.DATES.DATE[key].TERM_END]);
+			}
+		}
+		for (var i=0; i < datesData.length; i++) {
+			var appDeadline = reformatDate(datesData[i][0]);
+			var startDate = reformatDate(datesData[i][4]);
+			if (startDate == 'undefined/undefined/') { startDate = 'tba'; }
+			var endDate = reformatDate(datesData[i][5]);
+			if (endDate == 'undefined/undefined/') { endDate = 'tba'; }
+			datesHtmlBody = datesHtmlBody + '<tr><td>' + datesData[i][2] + ', ' + datesData[i][3] +'</td><td class="compact-column text-center">' + appDeadline + '</td><td class="compact-column text-center">' + startDate + '</td><td class="compact-column text-center">' + endDate + '</td></tr>';
+		}
+		$('#program-dates').html(datesHtmlHeading + datesHtmlBody + datesHtmlFooter);
+		// brochure
+		$('#brochure-content').html(data.DETAILS.PROGRAM_BROCHURE);
+	}
+	function reformatDate(datestring) {
+		var splitdate1 = datestring.split(' ');
+		var splitdate2 = splitdate1[0].split('-');
+		return splitdate2[1] + "/" + splitdate2[2] + "/" + splitdate2[0];
+	}
+	function previousProgram (curProgramId) {
+		var tmpProgId = featuredProgramIds.pop();
+		featuredProgramIds.unshift(tmpProgId);
+		populatePage(featuredProgramIds[0]);
+	}
+	function nextProgram (curProgramId) {
+		var tmpProgId = featuredProgramIds.shift();
+		featuredProgramIds.push(tmpProgId);
+		populatePage(featuredProgramIds[0]);
+	}
+</script>
