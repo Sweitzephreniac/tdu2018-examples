@@ -45,7 +45,6 @@
 				// check to make sure this isn't a multi-location program
 				if (programIds.indexOf(data.PROGRAM[program].PROGRAM_ID) != -1) {
 					// add the location
-					var curProgramLocations = programLocations[programIds.indexOf(data.PROGRAM[program].PROGRAM_ID)];
 					programLocations[programIds.indexOf(data.PROGRAM[program].PROGRAM_ID)] = programLocations[programIds.indexOf(data.PROGRAM[program].PROGRAM_ID)] + '; ' + data.PROGRAM[program].PROGRAM_CITY + ', ' + data.PROGRAM[program].PROGRAM_COUNTRY
 				} else {
 					// add the id, name, and location

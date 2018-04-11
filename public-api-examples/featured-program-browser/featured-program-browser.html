@@ -75,7 +75,7 @@
 		}
 		// dates and deadlines
 		var datesHtmlHeading = '<table class="table table-bordered table-condensed table-striped"><tr><th colspan="4" class="bg-primary">Dates & deadlines</th></tr><tr><th>term / year</th><th class="compact-column text-center">application deadline</th><th class="compact-column text-center">start date</th><th class="compact-column text-center">end date</th></tr>';
-		var datesHtmlBody = ''
+		var datesHtmlBody = '';
 		var datesHtmlFooter = '</table>';
 		var datesData = [];
 		if (data.DETAILS.DATES.DATE.APP_TERM) {
@@ -87,10 +87,16 @@
 		}
 		for (var i=0; i < datesData.length; i++) {
 			var appDeadline = reformatDate(datesData[i][0]);
-			var startDate = reformatDate(datesData[i][4]);
-			if (startDate == 'undefined/undefined/') { startDate = 'tba'; }
-			var endDate = reformatDate(datesData[i][5]);
-			if (endDate == 'undefined/undefined/') { endDate = 'tba'; }
+			if (datesData[i][5] == '') {
+				var startDate = 'tba';
+			} else {
+				var startDate = reformatDate(datesData[i][5]);
+			}
+			if (datesData[i][6] == '') {
+				var endDate = 'tba';
+			} else {
+				var endDate = reformatDate(datesData[i][6]);
+			}
 			datesHtmlBody = datesHtmlBody + '<tr><td>' + datesData[i][2] + ', ' + datesData[i][3] +'</td><td class="compact-column text-center">' + appDeadline + '</td><td class="compact-column text-center">' + startDate + '</td><td class="compact-column text-center">' + endDate + '</td></tr>';
 		}
 		$('#program-dates').html(datesHtmlHeading + datesHtmlBody + datesHtmlFooter);
